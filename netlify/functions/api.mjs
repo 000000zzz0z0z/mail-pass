@@ -16,6 +16,32 @@ function isAdmin(pw) {
   for (let i = 0; i < real.length; i++) diff |= real.charCodeAt(i) ^ pw.charCodeAt(i);
   return diff === 0;
 }
+
+// mail.tm との通信（このサイトに必要な操作だけ許可）
+const MT = 'https://api.mail.tm';
+const MSG = /^\/messages\/[A-Za-z0-9]+$/;
+async function mailtm(body) {
+  const path = String(body.path || '');
+  const method = String(body.method || 'GET').toUpperCase();
+  const allowed =
+    (method === 'GET' && (path === '/domains' || path === '/messages' || MSG.test(path))) ||
+    (method === 'POST' && (path === '/token' || path === '/accounts')) ||
+    (method === 'PATCH' && MSG.test(path));
+  if (!allowed) return json({ error: '不正なリクエストです。' }, 400);
+  if (path === '/accounts' && !isAdmin(body.pw)) return json({ error: '管理者としてログインし直してください。' }, 401);
+
+  const headers = { accept: 'application/ld+json', 'content-type': method === 'PATCH' ? 'application/merge-patch+json' : 'application/json' };
+  if (body.token) headers.authorization = 'Bearer ' + String(body.token);
+  let r;
+  try {
+    r = await fetch(MT + path, { method, headers, body: method === 'GET' ? undefined : JSON.stringify(body.body || {}) });
+  } catch {
+    return json({ error: 'メールサーバーに接続できません。時間をおいて試してください。' }, 502);
+  }
+  const text = await r.text();
+  return new Response(text || '{}', { status: r.status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+}
+
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 export default async (req) => {
@@ -24,6 +50,8 @@ export default async (req) => {
 
   let body = {};
   try { body = await req.json(); } catch {}
+
+  if (pathname === '/api/mt') return mailtm(body);
 
   // 管理者ログイン確認
   if (pathname === '/api/admin') {
@@ -56,4 +84,4 @@ export default async (req) => {
   return new Response('Not found', { status: 404 });
 };
 
-export const config = { path: ['/api/admin', '/api/put', '/api/take'] };
+export const config = { path: ['/api/admin', '/api/put', '/api/take', '/api/mt'] };

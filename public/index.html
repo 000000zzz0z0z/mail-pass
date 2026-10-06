@@ -279,16 +279,15 @@ const takeBlob = async id => (await api('/api/take', {id})).blob;
 
 
 /* ---------- mail.tm ---------- */
-const MT = 'https://api.mail.tm';
-async function mt(path, {method = 'GET', body, token} = {}){
+async function mt(path, {method = 'GET', body, token, pw} = {}, retry = 0){
   let r;
   try {
-    r = await fetch(MT + path, {method, headers: {'content-type':'application/json', ...(token ? {authorization: 'Bearer ' + token} : {})},
-      body: body ? JSON.stringify(body) : undefined});
-  } catch { throw new Error('メールサーバーに接続できません。時間をおいて試してください。'); }
-  if (r.status === 429) { await new Promise(x => setTimeout(x, 1200)); return mt(path, {method, body, token}); }
+    r = await fetch('/api/mt', {method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({path, method, body, token, pw})});
+  } catch { throw new Error('通信に失敗しました。接続を確認してください。'); }
+  if (r.status === 429 && retry < 3) { await new Promise(x => setTimeout(x, 1200)); return mt(path, {method, body, token, pw}, retry + 1); }
   const j = r.status === 204 ? {} : await r.json().catch(() => ({}));
-  if (!r.ok) { const er = new Error(j['hydra:description'] || j.detail || j.message || 'メールサーバーでエラーが起きました。'); er.status = r.status; throw er; }
+  if (!r.ok) { const er = new Error(j.error || j['hydra:description'] || j.detail || j.message || 'メールサーバーでエラーが起きました。'); er.status = r.status; throw er; }
   return j;
 }
 
@@ -341,7 +340,7 @@ async function openMail(id){
       const p = document.createElement('pre'); p.textContent = m.text || '(本文なし)'; body.append(p);
     }
     $('list').hidden = true; $('mail').classList.add('on');
-    try { await fetch(MT + '/messages/' + id, {method:'PATCH', headers:{authorization:'Bearer ' + token, 'content-type':'application/merge-patch+json'}, body: JSON.stringify({seen:true})}); } catch {}
+    mt('/messages/' + id, {method:'PATCH', body:{seen:true}, token}).catch(() => {});
   } catch (e) { SFX.error(); $('takeMsg').textContent = e.message; }
 }
 $('back').onclick = () => { $('mail').classList.remove('on'); $('list').hidden = false; loadList(true).catch(() => {}); };
@@ -423,7 +422,7 @@ $('issue').onclick = async () => {
     if (!domain) throw new Error('メールサーバーに接続できません。時間をおいて試してください。');
     const a = user + '@' + domain;
     const p = Array.from(crypto.getRandomValues(new Uint8Array(20)), x => ALPHA[x & 31]).join('');
-    try { await mt('/accounts', {method:'POST', body:{address: a, password: p}}); }
+    try { await mt('/accounts', {method:'POST', body:{address: a, password: p}, pw: adminPass}); }
     catch (e) { if (e.status === 422) throw new Error('このアドレスは使用中です。「ランダム」で別の名前にしてください。'); throw e; }
     const code = newCode();
     const iv = crypto.getRandomValues(new Uint8Array(12));
