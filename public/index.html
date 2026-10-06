@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>メール受信箱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+<style>
+@property --h{syntax:"<number>";inherits:true;initial-value:330}
+:root{
+  --h:330;
+  --a:hsl(var(--h) 100% 60%);                 /* メイン蛍光色（時間で変化） */
+  --b:hsl(calc(var(--h) + 150) 100% 62%);     /* 補色側（コピー系） */
+  --c:hsl(calc(var(--h) + 60) 100% 64%);      /* 第3色（外部リンク・発行） */
+  --a-dim:hsl(var(--h) 100% 60% / .14);
+  --line:hsl(var(--h) 70% 16%);
+  --green:#39ff14;
+  --red:#ff3b5c;
+  --black:#000;--panel:#07060a;--text:#f4f1f7;--muted:#8e8a97;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  animation:hue 40s linear infinite;
+}
+@keyframes hue{from{--h:330}to{--h:690}}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background:var(--black);color:var(--text);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:48px 48px}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 70% 50% at 50% 0%,hsl(var(--h) 100% 55% / .25),transparent 70%),
+             radial-gradient(ellipse 60% 40% at 50% 100%,hsl(calc(var(--h) + 150) 100% 55% / .12),transparent 70%),
+             linear-gradient(transparent 30%,var(--black) 85%)}
+main{position:relative;max-width:480px;margin:0 auto;padding:14vh 20px 96px}
+
+label{display:block;font-size:13px;color:var(--muted);margin:0 0 8px}
+.field{margin-bottom:20px}
+.row{display:flex;align-items:stretch;border:1px solid var(--line);background:var(--panel);transition:border-color .2s,box-shadow .2s}
+.row:focus-within{border-color:var(--a);box-shadow:0 0 18px var(--a-dim)}
+.row input{flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:15px/1.4 "Unbounded","Zen Kaku Gothic New",sans-serif;padding:14px;outline:none}
+.hero input{font-size:20px;letter-spacing:.08em;text-align:center;padding:18px}
+
+button,.btn{-webkit-tap-highlight-color:transparent}
+.btn{display:block;width:100%;padding:18px;border:0;cursor:pointer;margin-top:8px;text-align:center;text-decoration:none;
+  font:700 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.05em;color:var(--black);background:var(--a);
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));
+  box-shadow:0 0 24px var(--a-dim);transition:filter .15s,transform .08s}
+.btn:hover{filter:brightness(1.15)}
+.btn:active{transform:scale(.97);filter:brightness(1.4)}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.c{background:var(--c)}
+.btn.ghost{background:transparent;color:var(--muted);outline:1px solid var(--line);outline-offset:-1px;clip-path:none;box-shadow:none}
+.btn.ghost:hover{color:var(--text);outline-color:var(--muted)}
+.icon{background:transparent;border:0;border-left:1px solid var(--line);color:var(--b);padding:0 16px;cursor:pointer;font-size:13px;font-family:inherit;white-space:nowrap;transition:background .15s}
+.icon:hover{background:hsl(calc(var(--h) + 150) 100% 60% / .12)}
+.icon:active{background:var(--b);color:var(--black)}
+:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+
+.key{display:none;margin-top:28px;padding:24px;border:1px solid var(--a);
+  background:linear-gradient(135deg,var(--a-dim),rgba(0,0,0,.6));box-shadow:0 0 40px var(--a-dim)}
+.key.on{display:block;animation:pop .45s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.key h2{font:700 13px "Zen Kaku Gothic New",sans-serif;color:var(--a);margin:0 0 12px}
+.big{font:700 clamp(22px,7vw,32px)/1.3 "Unbounded",monospace;color:var(--a);letter-spacing:.04em;text-shadow:0 0 18px var(--a);margin:0 0 16px;word-break:break-all}
+.out{display:grid;gap:10px;margin-bottom:12px}
+.out label{margin:6px 0 -4px}
+.note{font-size:12px;color:var(--muted);margin:14px 0 0;line-height:1.7}
+.msg{min-height:20px;font-size:13px;color:var(--red);margin-top:12px;line-height:1.6;text-align:center}
+
+.check{display:flex;align-items:center;gap:12px;font-size:14px;cursor:pointer;margin:4px 0 20px}
+.check input{appearance:none;width:22px;height:22px;border:1px solid var(--a);margin:0;display:grid;place-content:center;cursor:pointer;flex:none}
+.check input:checked{background:var(--a)}
+.check input:checked::after{content:"";width:6px;height:11px;border:solid var(--black);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+
+/* 管理者ボタン：蛍光緑で固定 */
+.admin-btn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  background:transparent;border:1px solid var(--green);color:var(--green);font:700 11px "Zen Kaku Gothic New",sans-serif;
+  padding:6px 10px;cursor:pointer;letter-spacing:.06em;text-shadow:0 0 8px var(--green);box-shadow:0 0 10px rgba(57,255,20,.3);opacity:.75;transition:opacity .2s,background .15s,color .15s}
+.admin-btn:hover{opacity:1}
+.admin-btn:active{background:var(--green);color:var(--black)}
+
+.view{display:none}.view.on{display:block;animation:pop .4s ease}
+.admin-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.admin-head span{color:var(--green);font:700 12px "Zen Kaku Gothic New",sans-serif;text-shadow:0 0 8px var(--green)}
+.admin-head .btn{width:auto;margin:0;padding:8px 14px;font-size:13px}
+
+dialog{border:1px solid var(--green);background:#020402;color:var(--text);padding:24px;width:min(340px,90vw);box-shadow:0 0 40px rgba(57,255,20,.25)}
+dialog::backdrop{background:rgba(0,0,0,.75);backdrop-filter:blur(3px)}
+dialog h2{font:700 14px "Zen Kaku Gothic New",sans-serif;color:var(--green);margin:0 0 16px}
+dialog .row:focus-within{border-color:var(--green);box-shadow:0 0 18px rgba(57,255,20,.2)}
+dialog .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+dialog .btn{margin:0;padding:14px;font-size:14px}
+dialog .btn.g{background:var(--green);box-shadow:0 0 20px rgba(57,255,20,.3)}
+.shake{animation:shake .35s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+.toast{position:fixed;left:50%;bottom:calc(64px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--b);color:var(--black);font-weight:700;padding:10px 20px;font-size:14px;transition:opacity .2s,transform .2s}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.suffix{display:flex;align-items:center;color:var(--a);font:13px "Unbounded",sans-serif;padding-right:12px;white-space:nowrap}
+.btn.small{width:auto;margin:0;padding:8px 14px;font-size:13px}
+.addr-bar{display:flex;align-items:stretch;border:1px solid var(--a);margin-top:28px;box-shadow:0 0 24px var(--a-dim)}
+.addr-bar p{flex:1;margin:0;padding:14px;font:14px "Unbounded",monospace;color:var(--a);word-break:break-all;text-shadow:0 0 10px var(--a-dim)}
+.addr-out{font:14px "Unbounded",monospace;word-break:break-all;margin:0 0 20px}
+.list-head{display:flex;justify-content:space-between;align-items:center;margin:24px 0 8px}
+.list-head span{font-size:13px;color:var(--muted)}
+.list{border-top:1px solid var(--line)}
+.item{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--text);padding:16px 6px;cursor:pointer;font-family:inherit;transition:background .15s}
+.item:hover{background:var(--a-dim)}
+.item:active{background:var(--a);color:var(--black)}
+.item b{display:block;font-size:15px;margin-bottom:4px}
+.item span{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item.new b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--b);box-shadow:0 0 8px var(--b);margin-right:8px;vertical-align:middle}
+.empty{color:var(--muted);font-size:14px;padding:32px 0;text-align:center;line-height:1.8}
+.mail{display:none;margin-top:20px;border:1px solid var(--a);background:var(--panel)}
+.mail.on{display:block;animation:pop .35s ease}
+.mail header{padding:16px;border-bottom:1px solid var(--line)}
+.mail header .btn{margin-bottom:12px}
+.mail header b{display:block;font-size:16px;margin-bottom:6px}
+.mail header span{font-size:12px;color:var(--muted);word-break:break-all}
+.mail iframe{width:100%;height:65vh;border:0;background:#fff;display:block}
+.mail pre{margin:0;padding:16px;white-space:pre-wrap;word-break:break-word;font:14px/1.7 "Zen Kaku Gothic New",sans-serif;max-height:65vh;overflow:auto}
+.credit{position:fixed;left:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:11px;color:var(--muted);text-decoration:none}
+.credit:hover{color:var(--text)}
+@media (prefers-reduced-motion:reduce){:root{animation-duration:240s}.key.on,.view.on,.shake{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <!-- 受け取る（トップ） -->
+  <section class="view on" id="receiveView">
+    <div class="field hero">
+      <label for="inCode" style="text-align:center">受け渡しパスワード</label>
+      <div class="row"><input id="inCode" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"></div>
+    </div>
+    <button class="btn" id="receive" data-sfx="go">受信箱を開く</button>
+    <div class="msg" id="takeMsg"></div>
+
+    <div id="box" hidden>
+      <div class="addr-bar">
+        <p id="boxAddr"></p>
+        <button class="icon" id="copyAddr" data-sfx="copy">コピー</button>
+      </div>
+      <div class="list-head">
+        <span id="count">受信箱</span>
+        <button class="btn ghost small" id="refresh" data-sfx="tick">更新</button>
+      </div>
+      <div class="list" id="list"></div>
+      <div class="mail" id="mail">
+        <header>
+          <button class="btn ghost small" id="back" data-sfx="close">一覧へ</button>
+          <b id="mSubj"></b>
+          <span id="mFrom"></span>
+        </header>
+        <div id="mBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 渡す（管理者のみ） -->
+  <section class="view" id="adminView">
+    <div class="admin-head">
+      <span>管理者モード</span>
+      <button class="btn ghost" id="logout" data-sfx="close">終了</button>
+    </div>
+    <div class="field">
+      <label for="uname">メールアドレス</label>
+      <div class="row">
+        <input id="uname" autocomplete="off" spellcheck="false">
+        <span class="suffix" id="domainLabel">@…</span>
+        <button class="icon" id="roll" data-sfx="tick">ランダム</button>
+      </div>
+    </div>
+    <button class="btn c" id="issue" data-sfx="go">アドレスを作って受け渡しパスワードを発行</button>
+    <div class="msg" id="giveMsg"></div>
+
+    <div class="key" id="issued">
+      <h2>作成したアドレス</h2>
+      <p class="addr-out" id="madeAddr"></p>
+      <h2>このパスワードを相手に伝えてください</h2>
+      <p class="big" id="code"></p>
+      <button class="btn" id="copyCode" data-sfx="copy">コピー</button>
+      <p class="note">相手はこのパスワードを入れるだけで、このサイト上で受信箱を開けます。パスワードはずっと有効です。</p>
+    </div>
+  </section>
+</main>
+
+<a class="credit" href="https://mail.tm" target="_blank" rel="noopener" data-sfx="link">受信: mail.tm</a>
+<button class="admin-btn" id="adminBtn" data-sfx="admin">管理者用</button>
+
+<dialog id="loginDlg">
+  <h2>管理者パスワード</h2>
+  <div class="row" id="loginRow"><input id="adminPw" type="password" autocomplete="off"></div>
+  <div class="msg" id="loginMsg"></div>
+  <div class="btns">
+    <button class="btn ghost" id="loginCancel" data-sfx="close">キャンセル</button>
+    <button class="btn g" id="loginOk" data-sfx="go">入る</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast">コピーしました</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const enc = new TextEncoder(), dec = new TextDecoder();
+const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/* ---------- 効果音（Web Audio で合成） ---------- */
+let ac;
+function tone(freqs, {type = 'sine', dur = .12, gap = .06, vol = .14} = {}){
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+    const t0 = ac.currentTime + .005;
+    freqs.forEach((f, i) => {
+      const t = t0 + i * gap, o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + .01);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + .02);
+    });
+  } catch {}
+}
+const SFX = {
+  go:      () => tone([660, 990], {type:'triangle', dur:.1, gap:.05}),
+  copy:    () => tone([1568, 2093], {type:'sine', dur:.07, gap:.04, vol:.1}),
+  link:    () => tone([523, 784, 1047], {type:'triangle', dur:.12, gap:.05}),
+  admin:   () => tone([1200, 1800], {type:'square', dur:.05, gap:.04, vol:.05}),
+  tick:    () => tone([900], {type:'square', dur:.04, vol:.05}),
+  close:   () => tone([700, 440], {type:'sine', dur:.1, gap:.05}),
+  success: () => tone([784, 1047, 1319, 1568], {type:'sine', dur:.28, gap:.07, vol:.12}),
+  unlock:  () => tone([392, 523, 659, 784, 1047], {type:'triangle', dur:.18, gap:.06, vol:.12}),
+  error:   () => tone([220, 165], {type:'sawtooth', dur:.16, gap:.11, vol:.07}),
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-sfx]');
+  if (el && SFX[el.dataset.sfx]) SFX[el.dataset.sfx]();
+});
+
+/* ---------- 共通 ---------- */
+const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), x => ALPHA[x & 31]).join('');
+const norm = s => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+const pretty = c => c.match(/.{1,4}/g).join('-');
+const sha = async s => new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(s)));
+const hex = a => Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+const idOf = async c => hex(await sha('id:' + c)).slice(0, 40);
+const keyOf = async c => crypto.subtle.importKey('raw', await sha('key:' + c), 'AES-GCM', false, ['encrypt', 'decrypt']);
+const b64 = a => btoa(String.fromCharCode(...a));
+const ub64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+let tt;
+async function copy(text){
+  try { await navigator.clipboard.writeText(text); }
+  catch { const t = document.createElement('textarea'); t.value = text; document.body.append(t); t.select(); document.execCommand('copy'); t.remove(); }
+  $('toast').classList.add('on'); clearTimeout(tt); tt = setTimeout(() => $('toast').classList.remove('on'), 1400);
+}
+document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy($(b.dataset.copy).value));
+
+/* ---------- サーバー通信（Netlify Functions） ---------- */
+async function api(path, data){
+  let r;
+  try { r = await fetch(path, {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(data)}); }
+  catch { throw new Error('通信に失敗しました。接続を確認してください。'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error || '通信に失敗しました。時間をおいて試してください。'); e.status = r.status; throw e; }
+  return j;
+}
+async function verifyAdmin(pw){
+  try { await api('/api/admin', {pw}); return true; }
+  catch (e) { if (e.status === 401) return false; throw e; }
+}
+const putBlob = (id, blob) => api('/api/put', {id, blob, pw: adminPass});
+const takeBlob = async id => (await api('/api/take', {id})).blob;
+
+
+/* ---------- mail.tm ---------- */
+const MT = 'https://api.mail.tm';
+async function mt(path, {method = 'GET', body, token} = {}){
+  let r;
+  try {
+    r = await fetch(MT + path, {method, headers: {'content-type':'application/json', ...(token ? {authorization: 'Bearer ' + token} : {})},
+      body: body ? JSON.stringify(body) : undefined});
+  } catch { throw new Error('メールサーバーに接続できません。時間をおいて試してください。'); }
+  if (r.status === 429) { await new Promise(x => setTimeout(x, 1200)); return mt(path, {method, body, token}); }
+  const j = r.status === 204 ? {} : await r.json().catch(() => ({}));
+  if (!r.ok) { const er = new Error(j['hydra:description'] || j.detail || j.message || 'メールサーバーでエラーが起きました。'); er.status = r.status; throw er; }
+  return j;
+}
+
+/* ---------- 受信箱 ---------- */
+let acct = null, token = '', seen = new Set(), timer;
+async function login(){ token = (await mt('/token', {method:'POST', body:{address: acct.a, password: acct.p}})).token; }
+async function authed(path){
+  try { return await mt(path, {token}); }
+  catch (e) { if (e.status === 401) { await login(); return mt(path, {token}); } throw e; }
+}
+const fmt = d => new Date(d).toLocaleString('ja-JP', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
+
+async function loadList(silent){
+  const r = await authed('/messages');
+  const msgs = r['hydra:member'] || [];
+  const list = $('list'); list.textContent = '';
+  $('count').textContent = '受信箱　' + msgs.length + '件';
+  if (!msgs.length) {
+    const p = document.createElement('p'); p.className = 'empty';
+    p.textContent = 'まだメールは届いていません。届くと自動で表示されます。';
+    list.append(p);
+  }
+  let fresh = false;
+  msgs.forEach(m => {
+    const it = document.createElement('button'); it.className = 'item' + (m.seen ? '' : ' new'); it.dataset.sfx = 'go';
+    const b = document.createElement('b'); b.textContent = m.subject || '(件名なし)';
+    const s1 = document.createElement('span'); s1.textContent = (m.from?.name || m.from?.address || '') + '　' + fmt(m.createdAt);
+    const s2 = document.createElement('span'); s2.textContent = m.intro || '';
+    it.append(b, s1, s2); it.onclick = () => openMail(m.id);
+    list.append(it);
+    if (!seen.has(m.id)) { if (silent) fresh = true; seen.add(m.id); }
+  });
+  if (fresh) SFX.success();
+}
+
+async function openMail(id){
+  try {
+    const m = await authed('/messages/' + id);
+    $('mSubj').textContent = m.subject || '(件名なし)';
+    $('mFrom').textContent = (m.from?.name ? m.from.name + ' <' + m.from.address + '>' : m.from?.address || '') + '　' + fmt(m.createdAt)
+      + (m.attachments?.length ? '　添付: ' + m.attachments.map(a => a.filename).join(', ') : '');
+    const body = $('mBody'); body.textContent = '';
+    const html = Array.isArray(m.html) ? m.html.join('') : (m.html || '');
+    if (html) {
+      const f = document.createElement('iframe');
+      f.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox');
+      f.srcdoc = '<base target="_blank">' + html;
+      body.append(f);
+    } else {
+      const p = document.createElement('pre'); p.textContent = m.text || '(本文なし)'; body.append(p);
+    }
+    $('list').hidden = true; $('mail').classList.add('on');
+    try { await fetch(MT + '/messages/' + id, {method:'PATCH', headers:{authorization:'Bearer ' + token, 'content-type':'application/merge-patch+json'}, body: JSON.stringify({seen:true})}); } catch {}
+  } catch (e) { SFX.error(); $('takeMsg').textContent = e.message; }
+}
+$('back').onclick = () => { $('mail').classList.remove('on'); $('list').hidden = false; loadList(true).catch(() => {}); };
+$('refresh').onclick = () => loadList().catch(e => { SFX.error(); $('takeMsg').textContent = e.message; });
+$('copyAddr').onclick = () => copy(acct.a);
+
+$('receive').onclick = async () => {
+  const msg = $('takeMsg'); msg.textContent = '';
+  const code = norm($('inCode').value);
+  if (code.length !== 12) { SFX.error(); return msg.textContent = '受け渡しパスワードは12文字です（ハイフンなしでもOK）。'; }
+  const b = $('receive'); b.disabled = true;
+  try {
+    const r = await takeBlob(await idOf(code));
+    const [iv, ct] = r.split('.');
+    acct = JSON.parse(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM', iv: ub64(iv)}, await keyOf(code), ub64(ct))));
+    await login();
+    seen = new Set();
+    $('boxAddr').textContent = acct.a;
+    $('box').hidden = false; $('mail').classList.remove('on'); $('list').hidden = false;
+    await loadList();
+    SFX.success();
+    clearInterval(timer); timer = setInterval(() => { if (!$('mail').classList.contains('on')) loadList(true).catch(() => {}); }, 10000);
+  } catch (e) { msg.textContent = e.message || '開けませんでした。'; SFX.error(); }
+  finally { b.disabled = false; }
+};
+$('inCode').addEventListener('keydown', e => { if (e.key === 'Enter') { SFX.go(); $('receive').click(); } });
+
+/* ---------- 管理者ログイン ---------- */
+let adminPass = '';
+const dlg = $('loginDlg');
+$('adminBtn').onclick = () => { $('adminPw').value = ''; $('loginMsg').textContent = ''; dlg.showModal(); $('adminPw').focus(); };
+$('loginCancel').onclick = () => dlg.close();
+async function tryLogin(){
+  const pw = $('adminPw').value;
+  $('loginOk').disabled = true;
+  try {
+    if (await verifyAdmin(pw)) {
+      adminPass = pw; dlg.close(); SFX.unlock();
+      $('receiveView').classList.remove('on'); $('adminView').classList.add('on');
+      $('adminBtn').hidden = true;
+    } else {
+      SFX.error(); $('loginMsg').textContent = 'パスワードが違います。';
+      const r = $('loginRow'); r.classList.remove('shake'); void r.offsetWidth; r.classList.add('shake');
+    }
+  } catch (e) { SFX.error(); $('loginMsg').textContent = e.message; }
+  finally { $('loginOk').disabled = false; }
+}
+$('loginOk').onclick = tryLogin;
+$('adminPw').addEventListener('keydown', e => { if (e.key === 'Enter') { SFX.go(); tryLogin(); } });
+$('logout').onclick = () => {
+  adminPass = '';
+  $('issued').classList.remove('on'); $('giveMsg').textContent = '';
+  $('adminView').classList.remove('on'); $('receiveView').classList.add('on');
+  $('adminBtn').hidden = false;
+};
+
+/* ---------- 渡す（mail.tm にアドレスを作成） ---------- */
+const words = ['neon','pink','nova','byte','luna','vex','kiro','zen','echo','raze','mika','flux','yuki','hana','sora','rei'];
+const roll = () => { const r = crypto.getRandomValues(new Uint32Array(3)); return words[r[0]%16] + words[r[1]%16] + (r[2]%90000+10000); };
+$('uname').value = roll();
+$('roll').onclick = () => $('uname').value = roll();
+let domain = '';
+async function loadDomain(){
+  try {
+    const r = await mt('/domains');
+    const d = (r['hydra:member'] || []).find(x => x.isActive && !x.isPrivate);
+    if (d) { domain = d.domain; $('domainLabel').textContent = '@' + domain; }
+  } catch {}
+}
+loadDomain();
+
+$('issue').onclick = async () => {
+  const msg = $('giveMsg'); msg.textContent = ''; $('issued').classList.remove('on');
+  const user = $('uname').value.trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9._-]{2,40}$/.test(user)) { SFX.error(); return msg.textContent = 'アドレスは英小文字・数字・. _ - の3文字以上で入力してください。'; }
+  const b = $('issue'); b.disabled = true;
+  try {
+    if (!domain) await loadDomain();
+    if (!domain) throw new Error('メールサーバーに接続できません。時間をおいて試してください。');
+    const a = user + '@' + domain;
+    const p = Array.from(crypto.getRandomValues(new Uint8Array(20)), x => ALPHA[x & 31]).join('');
+    try { await mt('/accounts', {method:'POST', body:{address: a, password: p}}); }
+    catch (e) { if (e.status === 422) throw new Error('このアドレスは使用中です。「ランダム」で別の名前にしてください。'); throw e; }
+    const code = newCode();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv}, await keyOf(code), enc.encode(JSON.stringify({a, p}))));
+    await putBlob(await idOf(code), b64(iv) + '.' + b64(ct));
+    $('madeAddr').textContent = a;
+    $('code').textContent = pretty(code);
+    $('issued').classList.add('on'); SFX.success();
+    $('uname').value = roll();
+  } catch (e) { msg.textContent = e.message; SFX.error(); }
+  finally { b.disabled = false; }
+};
+$('copyCode').onclick = () => copy($('code').textContent);
+</script>
+</body>
+</html>
